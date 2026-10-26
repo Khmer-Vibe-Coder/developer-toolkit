@@ -113,9 +113,9 @@ REPOS_FILE="$CONFIG_DIR/repos.conf"
 TEMPLATES_FILE="$CONFIG_DIR/templates.conf"
 REMOTES_DIR="$CONFIG_DIR/remotes"
 
-mkdir -p "$CONFIG_DIR"
-touch "$REPOS_FILE"
-touch "$TEMPLATES_FILE"
+mkdir -p "$CONFIG_DIR" 2>/dev/null || true
+[ -f "$REPOS_FILE" ] || touch "$REPOS_FILE" 2>/dev/null || true
+[ -f "$TEMPLATES_FILE" ] || touch "$TEMPLATES_FILE" 2>/dev/null || true
 
 # Template arrays
 TPL_NAMES=()
@@ -1102,10 +1102,22 @@ resolve_repo_branch_ref() {
 # Main Report Execution & Argument Parsing
 # ==============================================================================
 
-# Quick help check
+# Quick help & version check
 for arg in "$@"; do
   if [ "$arg" = "-h" ] || [ "$arg" = "--help" ] || [ "$arg" = "help" ]; then
     show_help
+    exit 0
+  elif [ "$arg" = "-v" ] || [ "$arg" = "-V" ] || [ "$arg" = "--version" ] || [ "$arg" = "version" ]; then
+    SOURCE="${BASH_SOURCE[0]}"
+    while [ -L "$SOURCE" ]; do
+      DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+      SOURCE="$(readlink "$SOURCE")"
+      [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+    done
+    TOOLKIT_ROOT="$(cd -P "$(dirname "$SOURCE")/../.." && pwd)"
+    TOOLKIT_VERSION="2.0.0"
+    [ -f "$TOOLKIT_ROOT/VERSION" ] && read -r TOOLKIT_VERSION < "$TOOLKIT_ROOT/VERSION" || true
+    echo "git-report (Developer Toolkit) ${TOOLKIT_VERSION:-2.0.0}"
     exit 0
   fi
 done

@@ -62,9 +62,9 @@ CONFIG_DIR="${GIT_REPORT_CONFIG_DIR:-$HOME/.config/developer-toolkit}"
 REPOS_FILE="$CONFIG_DIR/repos.conf"
 TEMPLATES_FILE="$CONFIG_DIR/templates.conf"
 
-mkdir -p "$CONFIG_DIR"
-touch "$REPOS_FILE"
-touch "$TEMPLATES_FILE"
+mkdir -p "$CONFIG_DIR" 2>/dev/null || true
+[ -f "$REPOS_FILE" ] || touch "$REPOS_FILE" 2>/dev/null || true
+[ -f "$TEMPLATES_FILE" ] || touch "$TEMPLATES_FILE" 2>/dev/null || true
 
 # ==============================================================================
 # Help & Usage
@@ -862,6 +862,11 @@ cmd_remove_template() {
 for arg in "$@"; do
   if [ "$arg" = "-h" ] || [ "$arg" = "--help" ] || [ "$arg" = "help" ]; then
     show_help
+    exit 0
+  elif [ "$arg" = "-v" ] || [ "$arg" = "-V" ] || [ "$arg" = "--version" ] || [ "$arg" = "version" ]; then
+    TOOLKIT_VERSION="2.0.0"
+    [ -f "$TOOLKIT_ROOT/VERSION" ] && read -r TOOLKIT_VERSION < "$TOOLKIT_ROOT/VERSION" || true
+    echo "git-template (Developer Toolkit) ${TOOLKIT_VERSION:-2.0.0}"
     exit 0
   fi
 done

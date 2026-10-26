@@ -22,9 +22,21 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# 1. Quick help check (allows viewing help outside of git repos)
+# 1. Quick help & version check (allows viewing help/version outside of git repos)
 for arg in "$@"; do
-  if [ "$arg" = "-h" ] || [ "$arg" = "--help" ]; then
+  if [ "$arg" = "-v" ] || [ "$arg" = "-V" ] || [ "$arg" = "--version" ] || [ "$arg" = "version" ]; then
+    SOURCE="${BASH_SOURCE[0]}"
+    while [ -L "$SOURCE" ]; do
+      DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+      SOURCE="$(readlink "$SOURCE")"
+      [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+    done
+    TOOLKIT_ROOT="$(cd -P "$(dirname "$SOURCE")/../.." && pwd)"
+    TOOLKIT_VERSION="2.0.0"
+    [ -f "$TOOLKIT_ROOT/VERSION" ] && read -r TOOLKIT_VERSION < "$TOOLKIT_ROOT/VERSION" || true
+    echo "git-smart-rebase (Developer Toolkit) ${TOOLKIT_VERSION:-2.0.0}"
+    exit 0
+  elif [ "$arg" = "-h" ] || [ "$arg" = "--help" ]; then
     echo -e "${CYAN}======================================================${NC}"
     echo -e "${CYAN}🚀 Git Smart Rebase Utility${NC}"
     echo -e "${CYAN}======================================================${NC}"

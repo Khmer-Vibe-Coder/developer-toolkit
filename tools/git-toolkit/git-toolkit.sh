@@ -30,6 +30,29 @@ SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 TOOLKIT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 BIN_DIR="$HOME/.local/bin"
 
+TOOLKIT_VERSION="2.0.0"
+if [ -f "$TOOLKIT_ROOT/VERSION" ]; then
+  read -r TOOLKIT_VERSION < "$TOOLKIT_ROOT/VERSION" || true
+  TOOLKIT_VERSION="${TOOLKIT_VERSION:-2.0.0}"
+fi
+
+show_version() {
+  local mode="${1:-short}"
+  if [ "$mode" = "detailed" ]; then
+    local git_rev=""
+    if git -C "$TOOLKIT_ROOT" rev-parse --short HEAD >/dev/null 2>&1; then
+      git_rev=" ($(git -C "$TOOLKIT_ROOT" rev-parse --short HEAD 2>/dev/null))"
+    fi
+    echo -e "${CYAN}${BOLD}Developer Toolkit (dtk) v${TOOLKIT_VERSION}${NC}${DIM}${git_rev}${NC}"
+    echo -e "  • ${BOLD}git-report${NC}        v${TOOLKIT_VERSION} $(is_installed_badge "git-report")"
+    echo -e "  • ${BOLD}git-template${NC}      v${TOOLKIT_VERSION} $(is_installed_badge "git-template")"
+    echo -e "  • ${BOLD}git-smart-rebase${NC}  v${TOOLKIT_VERSION} $(is_installed_badge "git-smart-rebase")"
+    echo -e "  • ${BOLD}git-toolkit (dtk)${NC} v${TOOLKIT_VERSION} $(is_installed_badge "git-toolkit")"
+  else
+    echo "Developer Toolkit (dtk) ${TOOLKIT_VERSION}"
+  fi
+}
+
 # Check if a tool is installed on the system
 is_installed_badge() {
   local cmd_name="$1"
@@ -48,12 +71,13 @@ is_installed_badge() {
 # Print the unified cheatsheet of all tools and their commands
 show_all_tools_help() {
   echo -e "${CYAN}======================================================================${NC}"
-  echo -e "${CYAN}🛠️  Developer Toolkit — Unified Command Reference (${BOLD}dtk${NC}${CYAN} / ${BOLD}git dtk${NC}${CYAN})${NC}"
+  echo -e "${CYAN}🛠️  Developer Toolkit v${TOOLKIT_VERSION} — Unified Command Reference (${BOLD}dtk${NC}${CYAN} / ${BOLD}git dtk${NC}${CYAN})${NC}"
   echo -e "${CYAN}======================================================================${NC}"
   echo -e "You can run tools directly (e.g. ${BOLD}git report${NC}) or through ${BOLD}dtk${NC} (e.g. ${BOLD}dtk report${NC})."
   echo -e ""
   echo -e "${BOLD}Unified Hub Commands:${NC}"
   echo -e "  ${CYAN}dtk${NC} / ${CYAN}git dtk${NC}                       Launch interactive tool picker menu"
+  echo -e "  ${CYAN}dtk --version${NC} / ${CYAN}dtk -v${NC} / ${CYAN}dtk version${NC} Show Developer Toolkit version"
   echo -e "  ${CYAN}dtk --help${NC} / ${CYAN}dtk list${NC} / ${CYAN}git dtk -h${NC}  List all tools and their commands"
   echo -e "  ${CYAN}dtk <tool> --help${NC} / ${CYAN}git dtk help <tool>${NC} Show detailed help for a specific tool"
   echo -e "  ${CYAN}dtk install${NC} / ${CYAN}dtk uninstall${NC}         Manage installed tools interactively"
@@ -140,7 +164,7 @@ interactive_hub_menu() {
   fi
 
   echo -e "${CYAN}======================================================${NC}"
-  echo -e "${CYAN}🛠️  Developer Toolkit Hub (${BOLD}dtk${NC}${CYAN})${NC}"
+  echo -e "${CYAN}🛠️  Developer Toolkit Hub (${BOLD}dtk v${TOOLKIT_VERSION}${NC}${CYAN})${NC}"
   echo -e "${CYAN}======================================================${NC}"
   echo -e "${DIM}Controls: [↑/↓ or j/k] Move  [Enter] Run  [h] Help Cheatsheet  [q] Quit${NC}\n"
 
@@ -219,6 +243,14 @@ if [ $# -eq 0 ]; then
 fi
 
 case "$1" in
+  -v|-V|--version)
+    show_version "short"
+    exit 0
+    ;;
+  version)
+    show_version "detailed"
+    exit 0
+    ;;
   -h|--help|help|commands|cheatsheet|list)
     shift
     if [ $# -gt 0 ]; then
