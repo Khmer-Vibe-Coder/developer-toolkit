@@ -6,11 +6,13 @@
 # ==============================================================================
 
 param(
-    [switch]$All
+    [switch]$All,
+    [switch]$Purge
 )
 
 $ToolkitRoot = $PSScriptRoot
 $BinDir = Join-Path $HOME ".local\bin"
+$ConfigDir = if ($env:GIT_REPORT_CONFIG_DIR) { $env:GIT_REPORT_CONFIG_DIR } else { Join-Path $HOME ".config\developer-toolkit" }
 Write-Host "======================================================" -ForegroundColor Cyan
 Write-Host "🗑️  Developer Toolkit Uninstaller (Windows)" -ForegroundColor Cyan
 Write-Host "======================================================" -ForegroundColor Cyan
@@ -121,6 +123,27 @@ foreach ($Item in $SelectedToRemove) {
     }
 
     $RemovedCount++
+}
+
+$RemovedReportOrTemplate = ($SelectedToRemove | Where-Object { $_.CmdName -in @("git-report", "git-template") }).Count -gt 0
+if ((Test-Path $ConfigDir) -and ($RemovedReportOrTemplate -or $Purge)) {
+    $ShouldDeleteConfig = $false
+    if ($Purge) {
+        $ShouldDeleteConfig = $true
+    } elseif (-not $All -and [Environment]::UserInteractive) {
+        Write-Host "`nSaved data found in $ConfigDir (repos.conf / templates.conf / remotes):" -ForegroundColor Cyan
+        $Choice = Read-Host "Also delete saved repositories & templates? [y/N]"
+        if ($Choice -match "^(y|yes)$") {
+            $ShouldDeleteConfig = $true
+        }
+    }
+
+    if ($ShouldDeleteConfig) {
+        Remove-Item -Path $ConfigDir -Recurse -Force
+        Write-Host "   ✔ Deleted saved configuration & templates: $ConfigDir" -ForegroundColor Green
+    } else {
+        Write-Host "   ℹ️ Kept saved configuration & templates in: $ConfigDir" -ForegroundColor Cyan
+    }
 }
 
 Write-Host "`n======================================================" -ForegroundColor Green

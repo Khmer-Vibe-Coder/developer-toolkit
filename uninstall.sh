@@ -26,16 +26,22 @@ if [ -d "/opt/homebrew/bin" ] && [ -w "/opt/homebrew/bin" ] && [ "${HOME}" = "/U
 fi
 
 AUTO_ALL=0
+PURGE_DATA=0
+CONFIG_DIR="${GIT_REPORT_CONFIG_DIR:-$HOME/.config/developer-toolkit}"
 
 for arg in "$@"; do
   case "$arg" in
     -a|--all|-y|--yes)
       AUTO_ALL=1
       ;;
+    --purge)
+      PURGE_DATA=1
+      ;;
     -h|--help)
       echo -e "${CYAN}Usage:${NC} ./uninstall.sh [options]"
       echo -e "  (no args)     Interactive checklist of currently installed tools to remove"
       echo -e "  -a, --all     Uninstall all installed tools without prompting"
+      echo -e "  --purge       Also delete saved repos, templates & remote caches (~/.config/developer-toolkit)"
       echo -e "  -h, --help    Show this help message"
       exit 0
       ;;
@@ -293,6 +299,82 @@ for idx in "${SELECTED_INDICES[@]}"; do
 
   REMOVED_COUNT=$((REMOVED_COUNT + 1))
 done
+
+# Check if git-report or git-template was uninstalled and saved config exists
+REMOVED_REPORT_OR_TEMPLATE=0
+for idx in "${SELECTED_INDICES[@]}"; do
+  if [ "${INSTALLED_NAMES[$idx]}" = "git-report" ] || [ "${INSTALLED_NAMES[$idx]}" = "git-template" ]; then
+    REMOVED_REPORT_OR_TEMPLATE=1
+    break
+  fi
+done
+
+if [ -d "$CONFIG_DIR" ] && { [ "$REMOVED_REPORT_OR_TEMPLATE" -eq 1 ] || [ "$PURGE_DATA" -eq 1 ]; }; then
+  should_delete_config=0
+  if [ "$PURGE_DATA" -eq 1 ]; then
+    should_delete_config=1
+  elif [ "$AUTO_ALL" -eq 0 ] && [ -t 0 ] && [ -t 1 ]; then
+    echo -e "\n${CYAN}${BOLD}Saved data found in ${CONFIG_DIR} (repos.conf / templates.conf / remotes):${NC}"
+    echo -e "${DIM}Controls: [↑/↓ or j/k] Move  [Space/Enter] Select  [Ctrl+C/q] Exit${NC}"
+    data_cursor=0
+    data_opts=(
+      "Keep saved repositories & templates (safe if reinstalling later - default)"
+      "Delete all saved repositories, templates & cached remotes (${CONFIG_DIR})"
+    )
+    draw_data_radio() {
+      printf "\033[?25l\033[?7l"
+      local i
+      for ((i = 0; i < 2; i++)); do
+        local pointer="  "
+        local radio="( )"
+        local style="${NC}"
+        if [ "$i" -eq "$data_cursor" ]; then
+          pointer="${CYAN}❯ ${NC}"
+          radio="(${GREEN}◉${NC})"
+          style="${BOLD}"
+        fi
+        printf "\r\033[2K%b%b %d) %b%s%b\n" "$pointer" "$radio" "$((i + 1))" "$style" "${data_opts[$i]}" "${NC}"
+      done
+      printf "\033[?7h\033[?25h"
+    }
+    draw_data_radio
+    while true; do
+      IFS= read -rsn1 key || true
+      if [[ "$key" == $'\x03' ]] || [ "$key" = "q" ] || [ "$key" = "Q" ]; then
+        break
+      elif [[ "$key" == $'\x1b' ]]; then
+        IFS= read -rsn2 rest || true
+        case "$rest" in
+          "[A"|"OA"|"[B"|"OB") data_cursor=$((1 - data_cursor)) ;;
+        esac
+      elif [ "$key" = "k" ] || [ "$key" = "K" ] || [ "$key" = "j" ] || [ "$key" = "J" ]; then
+        data_cursor=$((1 - data_cursor))
+      elif [ "$key" = "1" ]; then
+        data_cursor=0
+        printf "\033[2A"
+        draw_data_radio
+        break
+      elif [ "$key" = "2" ]; then
+        data_cursor=1
+        printf "\033[2A"
+        draw_data_radio
+        break
+      elif [ "$key" = "" ] || [ "$key" = " " ]; then
+        break
+      fi
+      printf "\033[2A"
+      draw_data_radio
+    done
+    [ "$data_cursor" -eq 1 ] && should_delete_config=1
+  fi
+
+  if [ "$should_delete_config" -eq 1 ]; then
+    rm -rf "$CONFIG_DIR"
+    echo -e "   ${GREEN}✔${NC} Deleted saved configuration & templates: ${CONFIG_DIR}"
+  else
+    echo -e "   ${BLUE}ℹ️${NC} Kept saved configuration & templates in: ${CONFIG_DIR}"
+  fi
+fi
 
 echo -e "\n${GREEN}======================================================${NC}"
 echo -e "${GREEN}✅ Successfully uninstalled ${REMOVED_COUNT} tool(s).${NC}"
