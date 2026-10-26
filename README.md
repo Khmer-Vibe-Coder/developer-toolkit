@@ -8,7 +8,10 @@ A modular collection of productivity scripts, Git extensions, and workflow utili
 
 | Tool | Category | Command | Description | Documentation |
 | :--- | :--- | :--- | :--- | :--- |
+| **`git-toolkit` (`dtk`)** | Unified Hub | `dtk` / `git dtk --help` | Master entry point to launch any tool interactively or list all commands across all tools (`--help`). | [Docs](tools/git-toolkit/README.md) |
 | **`git-smart-rebase`** | Git Workflow | `git smart-rebase [target]` | Auto-stashes pending changes, updates target branch from remote, and rebases cleanly. | [Docs](tools/git-smart-rebase/README.md) |
+| **`git-report`** | Git Reporting | `git report` | Links multiple local or remote repos and generates commit reports filtered by subset, branch, and date presets into `./report/`. | [Docs](tools/git-report/README.md) |
+| **`git-template`** | Report Presets | `git template` / `dtk template` | Saves reusable report templates (pre-selected repos, per-repo branches, author filter & date preset). | [Docs](tools/git-template/README.md) |
 
 ---
 
@@ -43,20 +46,25 @@ Open **PowerShell** in the `developer-toolkit` directory and run:
 
 ## 🚀 Usage
 
-Once installed, you can use the tools directly in any Git repository:
+Once installed, you can use **`dtk`** (or **`git dtk`** / **`git toolkit`**) as a single command hub, or call each tool directly:
 
 ```bash
-# Rebase onto default 'develop'
-git smart-rebase
+# 🛠️ 0. Unified Toolkit Hub (List all commands or launch interactive picker)
+dtk --help                        # List all tools and commands in one place
+git dtk --help                    # Same via Git alias
+dtk                               # Interactive menu to pick & run any tool
 
-# Rebase onto 'main'
-git smart-rebase main
+# 1. git-smart-rebase
+git smart-rebase                  # Rebase onto default 'develop'
+git smart-rebase main             # Rebase onto 'main'
+git smart-rebase -b feature/auth  # Rebase onto a specific branch
 
-# Rebase onto a specific branch
-git smart-rebase -b feature/auth
-
-# Show tool help
-git smart-rebase -h
+# 2. git-report (Multi-Repo Commit Report Generator)
+git report scan ~/Documents       # Auto-discover & link local repos (0 MB storage)
+git report add                    # Link current repo
+git report add <remote-git-url>   # Link remote URL (lightweight metadata clone)
+git report                        # Launch interactive selector & report wizard
+git report -r repoA,repoB -b develop -p this-week --me
 ```
 
 ---

@@ -114,6 +114,46 @@ fi
 # 5. Check for pending changes (unstaged, staged, or untracked)
 STASHED=0
 HAS_PENDING_CHANGES=0
+REBASE_IN_PROGRESS=0
+STASH_TOKEN=""
+
+# Emergency rollback if user presses Ctrl+C while checkout/pull/rebase is stuck
+handle_rebase_interrupt() {
+  trap '' INT TERM
+  echo -e "\n${YELLOW}⚠️  Interrupted (Ctrl+C)! Restoring your branch and code changes...${NC}"
+
+  local git_dir
+  git_dir=$(git rev-parse --git-dir 2>/dev/null || true)
+  if [ -n "$git_dir" ] && [ -f "$git_dir/index.lock" ]; then
+    rm -f "$git_dir/index.lock" 2>/dev/null || true
+  fi
+
+  if [ "$REBASE_IN_PROGRESS" -eq 1 ] || [ -d "${git_dir}/rebase-merge" ] || [ -d "${git_dir}/rebase-apply" ]; then
+    git rebase --abort 2>/dev/null || true
+  fi
+
+  local curr_b
+  curr_b=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+  if [ -n "$CURRENT_BRANCH" ] && [ "$curr_b" != "$CURRENT_BRANCH" ]; then
+    echo -e "${CYAN}↩️  Switching back to '${CURRENT_BRANCH}'...${NC}"
+    git checkout -f "$CURRENT_BRANCH" --quiet 2>/dev/null || git checkout "$CURRENT_BRANCH" --quiet 2>/dev/null || true
+  fi
+
+  local top_stash=""
+  if [ -n "$STASH_TOKEN" ]; then
+    top_stash=$(git stash list -n 1 2>/dev/null || true)
+  fi
+  if [ "$STASHED" -eq 1 ] || { [ -n "$STASH_TOKEN" ] && [[ "$top_stash" == *"$STASH_TOKEN"* ]]; }; then
+    echo -e "${YELLOW}📥 Restoring your stashed changes...${NC}"
+    git stash pop --quiet 2>/dev/null || true
+    STASHED=0
+    STASH_TOKEN=""
+    echo -e "${GREEN}✅ Restored '${CURRENT_BRANCH}' and your stashed code changes.${NC}"
+  fi
+
+  exit 130
+}
+trap handle_rebase_interrupt INT TERM
 
 if [ -n "$(git status --porcelain)" ]; then
   HAS_PENDING_CHANGES=1
@@ -126,7 +166,8 @@ if [ "$HAS_PENDING_CHANGES" -eq 1 ]; then
   git add -A
   
   STASH_TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-  git stash push -u -m "auto-rebase-stash [${CURRENT_BRANCH}] at ${STASH_TIMESTAMP}"
+  STASH_TOKEN="auto-rebase-stash [${CURRENT_BRANCH}] at ${STASH_TIMESTAMP}"
+  git stash push -u -m "$STASH_TOKEN"
   STASHED=1
   echo -e "${GREEN}✅ Changes successfully stashed.${NC}"
 else
@@ -158,15 +199,21 @@ git checkout "$CURRENT_BRANCH"
 
 # 8. Perform git rebase
 echo -e "\n${YELLOW}⚡ Rebasing '${CURRENT_BRANCH}' onto '${TARGET_BRANCH}'...${NC}"
+REBASE_IN_PROGRESS=1
 if git rebase "$TARGET_BRANCH"; then
+  REBASE_IN_PROGRESS=0
   echo -e "${GREEN}✅ Rebase completed successfully!${NC}"
   
   # 9. Restore stash if previously created
   if [ "$STASHED" -eq 1 ]; then
     echo -e "\n${YELLOW}📥 Restoring stashed changes with 'git stash pop'...${NC}"
     if git stash pop; then
+      STASHED=0
+      STASH_TOKEN=""
       echo -e "${GREEN}✅ Stashed changes restored successfully.${NC}"
     else
+      STASHED=0
+      STASH_TOKEN=""
       echo -e "${YELLOW}⚠️  Stash applied with potential conflict. Please review with 'git status'.${NC}"
     fi
   fi
