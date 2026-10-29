@@ -74,7 +74,7 @@ is_tool_installed() {
 
   # 2. If /opt/homebrew/bin is writable, verify symlink exists there too for instant PATH access
   if [ -n "$EXTRA_BIN_DIR" ]; then
-    if [ ! -L "$EXTRA_BIN_DIR/$cmd_name" ]; then
+    if [ "$cmd_name" != "git-gui" ] && [ ! -L "$EXTRA_BIN_DIR/$cmd_name" ]; then
       return 1
     fi
     if [ "$cmd_name" = "git-toolkit" ] && [ ! -L "$EXTRA_BIN_DIR/dtk" ]; then
@@ -345,7 +345,7 @@ for idx in "${SELECTED_INDICES[@]}"; do
   # 2. Symlink into ~/.local/bin (and /opt/homebrew/bin if available on macOS so it works immediately)
   ln -sf "$script" "$BIN_DIR/$cmd_name"
   echo -e "   ${GREEN}✔${NC} Symlink created: ${BIN_DIR}/${cmd_name}"
-  if [ -n "$EXTRA_BIN_DIR" ]; then
+  if [ -n "$EXTRA_BIN_DIR" ] && [ "$cmd_name" != "git-gui" ]; then
     ln -sf "$script" "$EXTRA_BIN_DIR/$cmd_name"
   fi
 
@@ -359,14 +359,25 @@ for idx in "${SELECTED_INDICES[@]}"; do
     echo -e "   ${GREEN}✔${NC} Unified Hub registered: ${BLUE}dtk${NC} / ${BLUE}git dtk${NC} / ${BLUE}git toolkit${NC}"
   fi
 
+  # 4. If this is git-gui, also register `dtk-gui` and `git app` alias
+  if [ "$cmd_name" = "git-gui" ]; then
+    ln -sf "$script" "$BIN_DIR/dtk-gui"
+    if [ -n "$EXTRA_BIN_DIR" ]; then
+      ln -sf "$script" "$EXTRA_BIN_DIR/dtk-gui"
+    fi
+    git config --global --replace-all alias.app "!bash \"$script\""
+    echo -e "   ${GREEN}✔${NC} Desktop App registered: ${BLUE}dtk app${NC} / ${BLUE}dtk gui${NC} / ${BLUE}git app${NC}"
+  fi
+
   INSTALLED_COUNT=$((INSTALLED_COUNT + 1))
 done
 
 # Automatically ensure ~/.local/bin is in the user's shell RC file (~/.zshrc or ~/.bashrc)
 ensure_path_in_rc() {
   local rc_file="$1"
+  local create_if_missing="${2:-0}"
   local path_line='export PATH="$HOME/.local/bin:$PATH"'
-  if [ -f "$rc_file" ]; then
+  if [ -f "$rc_file" ] || [ "$create_if_missing" -eq 1 ]; then
     if ! grep -Fq ".local/bin" "$rc_file" 2>/dev/null; then
       printf "\n# Developer Toolkit CLI PATH\n%s\n" "$path_line" >> "$rc_file"
       echo -e "${GREEN}✔${NC} Added ${BLUE}~/.local/bin${NC} to ${BOLD}${rc_file}${NC}"
@@ -375,8 +386,8 @@ ensure_path_in_rc() {
 }
 
 if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
-  ensure_path_in_rc "$HOME/.zshrc"
-  ensure_path_in_rc "$HOME/.bashrc"
+  ensure_path_in_rc "$HOME/.zshrc" 1
+  ensure_path_in_rc "$HOME/.bashrc" 0
 fi
 
 echo -e "\n${GREEN}======================================================${NC}"

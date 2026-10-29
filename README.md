@@ -9,6 +9,7 @@ A modular collection of productivity scripts, Git extensions, and workflow utili
 | Tool | Category | Command | Description | Documentation |
 | :--- | :--- | :--- | :--- | :--- |
 | **`git-toolkit` (`dtk`)** | Unified Hub | `dtk` / `git dtk --help` | Master entry point to launch any tool interactively or list all commands across all tools (`--help`). | [Docs](tools/git-toolkit/README.md) |
+| **`git-gui` (`dtk gui`)** | Desktop App | `dtk gui` / `dtk app` | Standalone cross-platform Electron Desktop App (macOS, Windows, Linux) for repository management, multi-repo commit reports, templates, and smart rebase. | [Docs](tools/git-gui/README.md) |
 | **`git-smart-rebase`** | Git Workflow | `git smart-rebase [target]` | Auto-stashes pending changes, updates target branch from remote, and rebases cleanly. | [Docs](tools/git-smart-rebase/README.md) |
 | **`git-report`** | Git Reporting | `git report` | Links multiple local or remote repos and generates commit reports filtered by subset, branch, and date presets into `./report/`. | [Docs](tools/git-report/README.md) |
 | **`git-template`** | Report Presets | `git template` / `dtk template` | Saves reusable report templates (pre-selected repos, per-repo branches, author filter & date preset). | [Docs](tools/git-template/README.md) |
@@ -49,7 +50,9 @@ Open **PowerShell** in the `developer-toolkit` directory and run:
 Once installed, you can use **`dtk`** (or **`git dtk`** / **`git toolkit`**) as a single command hub, or call each tool directly:
 
 ```bash
-# 🛠️ 0. Unified Toolkit Hub (List all commands or launch interactive picker)
+# 🛠️ 0. Unified Toolkit Hub & Desktop App
+dtk gui                           # Launch the cross-platform Electron Desktop App
+dtk app                           # Alias for dtk gui
 dtk --help                        # List all tools and commands in one place
 git dtk --help                    # Same via Git alias
 dtk                               # Interactive menu to pick & run any tool

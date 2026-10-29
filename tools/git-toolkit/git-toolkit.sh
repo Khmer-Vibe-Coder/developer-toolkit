@@ -44,6 +44,7 @@ show_version() {
       git_rev=" ($(git -C "$TOOLKIT_ROOT" rev-parse --short HEAD 2>/dev/null))"
     fi
     echo -e "${CYAN}${BOLD}Developer Toolkit (dtk) v${TOOLKIT_VERSION}${NC}${DIM}${git_rev}${NC}"
+    echo -e "  • ${BOLD}git-gui (dtk gui)${NC} v${TOOLKIT_VERSION} $(is_installed_badge "git-gui")"
     echo -e "  • ${BOLD}git-report${NC}        v${TOOLKIT_VERSION} $(is_installed_badge "git-report")"
     echo -e "  • ${BOLD}git-template${NC}      v${TOOLKIT_VERSION} $(is_installed_badge "git-template")"
     echo -e "  • ${BOLD}git-smart-rebase${NC}  v${TOOLKIT_VERSION} $(is_installed_badge "git-smart-rebase")"
@@ -77,6 +78,8 @@ show_all_tools_help() {
   echo -e ""
   echo -e "${BOLD}Unified Hub Commands:${NC}"
   echo -e "  ${CYAN}dtk${NC} / ${CYAN}git dtk${NC}                       Launch interactive tool picker menu"
+  echo -e "  ${CYAN}dtk gui${NC} / ${CYAN}dtk app${NC} / ${CYAN}dtk --gui${NC}           Launch the Developer Toolkit Electron Desktop App"
+  echo -e "  ${CYAN}dtk install-ext${NC} / ${CYAN}dtk ext${NC}               Install Extension into Antigravity IDE & VS Code"
   echo -e "  ${CYAN}dtk --version${NC} / ${CYAN}dtk -v${NC} / ${CYAN}dtk version${NC} Show Developer Toolkit version"
   echo -e "  ${CYAN}dtk --help${NC} / ${CYAN}dtk list${NC} / ${CYAN}git dtk -h${NC}  List all tools and their commands"
   echo -e "  ${CYAN}dtk <tool> --help${NC} / ${CYAN}git dtk help <tool>${NC} Show detailed help for a specific tool"
@@ -126,7 +129,7 @@ show_all_tools_help() {
           local fname
           fname="$(basename "$script")"
           local cname="${fname%.sh}"
-          if [ "$cname" != "git-smart-rebase" ] && [ "$cname" != "git-report" ] && [ "$cname" != "git-template" ] && [ "$cname" != "git-toolkit" ]; then
+          if [ "$cname" != "git-smart-rebase" ] && [ "$cname" != "git-report" ] && [ "$cname" != "git-template" ] && [ "$cname" != "git-toolkit" ] && [ "$cname" != "git-gui" ]; then
             echo -e ""
             echo -e "${CYAN}----------------------------------------------------------------------${NC}"
             echo -e "${BOLD}# ${extra_num}. ${cname}${NC} $(is_installed_badge "$cname")"
@@ -146,13 +149,14 @@ show_all_tools_help() {
 # Interactive launcher menu when running `dtk` / `git dtk` with no arguments
 interactive_hub_menu() {
   local options=(
-    "git-report         — Generate multi-repo commit report (Wizard / Templates)"
-    "git-template       — Create, edit, or run saved report templates"
-    "git-report scan    — Scan a folder to link local Git repositories"
-    "git-report list    — View all linked repositories"
-    "git-smart-rebase   — Sync & rebase current branch (default: develop)"
-    "Show All Commands  — Display full command cheatsheet (--help)"
-    "Manage Toolkit     — Install / select tools (./install.sh)"
+    "Launch GUI Workbench — Open visual multi-repo report, template & rebase UI (dtk gui)"
+    "git-report           — Generate multi-repo commit report (Wizard / Templates)"
+    "git-template         — Create, edit, or run saved report templates"
+    "git-report scan      — Scan a folder to link local Git repositories"
+    "git-report list      — View all linked repositories"
+    "git-smart-rebase     — Sync & rebase current branch (default: develop)"
+    "Show All Commands    — Display full command cheatsheet (--help)"
+    "Manage Toolkit       — Install / select tools (./install.sh)"
     "Exit"
   )
   local total="${#options[@]}"
@@ -209,7 +213,7 @@ interactive_hub_menu() {
     elif [ "$key" = "q" ] || [ "$key" = "Q" ]; then
       echo ""
       exit 0
-    elif [[ "$key" =~ ^[1-8]$ ]]; then
+    elif [[ "$key" =~ ^[1-9]$ ]]; then
       cursor=$((key - 1))
       break
     elif [ "$key" = "" ] || [ "$key" = " " ]; then
@@ -222,13 +226,14 @@ interactive_hub_menu() {
 
   echo ""
   case "$cursor" in
-    0) exec bash "$TOOLKIT_ROOT/tools/git-report/git-report.sh" ;;
-    1) exec bash "$TOOLKIT_ROOT/tools/git-template/git-template.sh" ;;
-    2) exec bash "$TOOLKIT_ROOT/tools/git-report/git-report.sh" scan ;;
-    3) exec bash "$TOOLKIT_ROOT/tools/git-report/git-report.sh" list ;;
-    4) exec bash "$TOOLKIT_ROOT/tools/git-smart-rebase/git-smart-rebase.sh" ;;
-    5) show_all_tools_help ;;
-    6) exec bash "$TOOLKIT_ROOT/install.sh" ;;
+    0) exec bash "$TOOLKIT_ROOT/tools/git-gui/git-gui.sh" ;;
+    1) exec bash "$TOOLKIT_ROOT/tools/git-report/git-report.sh" ;;
+    2) exec bash "$TOOLKIT_ROOT/tools/git-template/git-template.sh" ;;
+    3) exec bash "$TOOLKIT_ROOT/tools/git-report/git-report.sh" scan ;;
+    4) exec bash "$TOOLKIT_ROOT/tools/git-report/git-report.sh" list ;;
+    5) exec bash "$TOOLKIT_ROOT/tools/git-smart-rebase/git-smart-rebase.sh" ;;
+    6) show_all_tools_help ;;
+    7) exec bash "$TOOLKIT_ROOT/install.sh" ;;
     *) exit 0 ;;
   esac
 }
@@ -265,6 +270,14 @@ case "$1" in
     fi
     show_all_tools_help
     exit 0
+    ;;
+  gui|app|--gui|git-gui|gui-toolkit|git-gui-toolkit|workbench)
+    shift
+    exec bash "$TOOLKIT_ROOT/tools/git-gui/git-gui.sh" "$@"
+    ;;
+  install-ext|ext|vscode-ext|ide-ext)
+    shift
+    exec node "$TOOLKIT_ROOT/tools/git-gui/scripts/install-ide-extension.mjs" "$@"
     ;;
   rebase|smart-rebase|git-smart-rebase)
     shift
