@@ -1,0 +1,110 @@
+{
+  "name": "developer-toolkit-desktop",
+  "publisher": "developer-toolkit",
+  "displayName": "Developer Toolkit (dtk)",
+  "productName": "Developer Toolkit",
+  "version": "2.0.0",
+  "license": "MIT",
+  "author": "Khmer Vibe Coder",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Khmer-Vibe-Coder/developer-toolkit.git"
+  },
+  "description": "Minimalist cross-platform Desktop & IDE Workbench for Developer Toolkit (dtk)",
+  "type": "module",
+  "main": "main.mjs",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "activationEvents": [
+    "onView:dtk.sidebarView",
+    "onCommand:dtk.openWorkbench"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "dtk-workbench",
+          "title": "Developer Toolkit (dtk)",
+          "icon": "public/icon-activitybar.svg"
+        }
+      ]
+    },
+    "views": {
+      "dtk-workbench": [
+        {
+          "type": "webview",
+          "id": "dtk.sidebarView",
+          "name": "Workbench"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "dtk.openWorkbench",
+        "title": "Open Workbench in Editor Tab",
+        "category": "Developer Toolkit"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "dtk.openWorkbench",
+          "when": "view == dtk.sidebarView",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "postinstall": "node ./scripts/ensure-electron.mjs",
+    "start": "electron .",
+    "test": "node --test test/*.test.mjs",
+    "package:ext": "node ./scripts/package-vsix.mjs",
+    "publish:ext": "node ./scripts/package-vsix.mjs --publish",
+    "uninstall:ext": "node ./scripts/install-ide-extension.mjs --uninstall",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux",
+    "dist:all": "electron-builder -mwl"
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "allowScripts": {
+    "electron": true,
+    "electron-winstaller": true
+  },
+  "build": {
+    "appId": "dev.toolkit.workbench",
+    "productName": "Developer Toolkit",
+    "files": [
+      "main.mjs",
+      "preload.cjs",
+      "lib/**/*",
+      "public/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        "dmg",
+        "dir"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "linux": {
+      "category": "Development",
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    }
+  }
+}

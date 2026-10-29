@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <script>
+    try {
+      document.querySelector('meta[name="color-scheme"]').content =
+        localStorage.getItem('color-scheme') ?? 'light dark';
+    } catch {}
+  </script>
+  <title>Developer Toolkit (dtk) — Desktop Workbench</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body data-active-tab="rebase">
+  <header class="topbar">
+    <div class="brand-cluster">
+      <img src="./logo.png" alt="Developer Toolkit Logo" class="brand-logo" width="32" height="32">
+      <div class="brand-text">
+        <div class="brand-title-row">
+          <h1 class="brand-title">Developer Toolkit</h1>
+          <span id="version-badge" class="pill pill-Version">v2.0.0</span>
+        </div>
+        <p id="caller-path" class="caller-path" title="Active workspace directory">~/developer-toolkit</p>
+      </div>
+    </div>
+
+    <nav class="mode-nav" role="tablist" aria-label="Toolkit Mode">
+      <button type="button" role="tab" aria-selected="true" data-tab="rebase" class="mode-tab active">
+        <span class="tab-indicator"></span>
+        <span class="tab-text-full">Smart Rebase</span>
+        <span class="tab-text-compact">Rebase</span>
+      </button>
+      <button type="button" role="tab" aria-selected="false" data-tab="report" class="mode-tab">
+        <span class="tab-indicator"></span>
+        <span class="tab-text-full">Report Builder</span>
+        <span class="tab-text-compact">Report</span>
+      </button>
+      <button type="button" role="tab" aria-selected="false" data-tab="templates" class="mode-tab">
+        <span class="tab-indicator"></span>
+        <span class="tab-text-full">Templates</span>
+        <span class="tab-text-compact">Templates</span>
+        <span id="tpl-count-badge" class="tab-count">0</span>
+      </button>
+    </nav>
+
+    <div class="topbar-actions">
+      <button type="button" id="btn-open-link-modal" class="btn btn-secondary">
+        <span class="btn-text-full">+ Link / Scan Repos</span>
+        <span class="btn-text-compact">+ Link</span>
+      </button>
+      <button type="button" id="btn-refresh-state" class="btn btn-ghost" title="Refresh repository telemetry">
+        Refresh
+      </button>
+      <button type="button" id="btn-theme-toggle" class="btn btn-ghost theme-toggle" aria-label="Toggle color theme" title="Toggle light/dark theme">
+        <span class="theme-label-light">Dark theme</span>
+        <span class="theme-label-dark">Light theme</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="workbench">
+    <!-- LEFT RAIL: Linked Repositories & Live Telemetry -->
+    <aside id="repo-rail" class="pane repo-rail" aria-label="Linked Repositories">
+      <div class="pane-header">
+        <div class="pane-title-group">
+          <h2 class="pane-title">Repositories</h2>
+          <span id="repo-selection-summary" class="pill">0 / 0</span>
+        </div>
+        <div class="rail-bulk-actions">
+          <button type="button" id="btn-select-all-repos" class="btn-inline">All</button>
+          <span class="divider-dot">·</span>
+          <button type="button" id="btn-clear-all-repos" class="btn-inline">None</button>
+        </div>
+      </div>
+
+      <div class="repo-search-box">
+        <input
+          type="search"
+          id="repo-search-input"
+          class="input-compact"
+          placeholder="Filter repositories... (⌘K)"
+          aria-label="Filter linked repositories"
+        >
+      </div>
+
+      <div id="repo-list" class="repo-list" role="list"></div>
+
+      <div class="rail-footer">
+        <button type="button" id="btn-rail-scan" class="btn btn-secondary btn-full">
+          Scan Workspace Folder
+        </button>
+      </div>
+    </aside>
+
+    <!-- CENTER WORKFLOW DECK -->
+    <section id="workflow-deck" class="pane workflow-deck" aria-label="Workflow Configuration">
+      <!-- REPORT BUILDER -->
+      <div id="panel-report" class="workflow-panel hidden" role="tabpanel">
+        <div class="panel-header-bar">
+          <div class="heading-with-info">
+            <h2 class="section-heading">Multi-Repo Commit Report</h2>
+            <button
+              type="button"
+              class="info-badge"
+              commandfor="popover-report-info"
+              command="toggle-popover"
+              popovertarget="popover-report-info"
+              aria-label="About Multi-Repo Commit Report"
+              title="How Commit Report works"
+            >!</button>
+            <div id="popover-report-info" popover class="info-popover">
+              <strong>Multi-Repo Commit Report</strong>
+              <p>Queries remote or local branch history without modifying your working tree, and auto-saves a timestamped Markdown report to your output folder.</p>
+            </div>
+          </div>
+          <div class="template-quickbar">
+            <label for="quick-template-select" class="sr-only">Apply saved template</label>
+            <select id="quick-template-select" name="quick-template" class="select-compact">
+              <option value="">Custom configuration (no template)</option>
+            </select>
+          </div>
+        </div>
+
+        <form id="report-form" class="config-stack">
+          <!-- Branch Selection -->
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label">Target Branch</label>
+              <span class="field-hint">Prefers <code>origin/&lt;branch&gt;</code></span>
+            </div>
+            <div id="branch-mode-pills" class="pill-grid">
+              <button type="button" data-branch="develop" class="choice-pill active">develop</button>
+              <button type="button" data-branch="main" class="choice-pill">main</button>
+              <button type="button" data-branch="master" class="choice-pill">master</button>
+              <button type="button" data-branch="staging" class="choice-pill">staging</button>
+              <button type="button" data-branch="CURRENT" class="choice-pill">CURRENT</button>
+              <button type="button" data-branch="PER_REPO" class="choice-pill">Per-Repo Branch</button>
+              <button type="button" data-branch="CUSTOM" class="choice-pill">Custom...</button>
+            </div>
+
+            <div id="custom-branch-row" class="sub-field hidden">
+              <input
+                type="text"
+                id="custom-branch-input"
+                class="input-standard"
+                placeholder="Enter branch name (e.g. release/2.1)"
+              >
+            </div>
+
+            <div id="per-repo-branch-matrix" class="per-repo-matrix hidden"></div>
+          </div>
+
+          <!-- Date Range Selection -->
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label">Date Range</label>
+              <span id="resolved-date-hint" class="field-hint">Last 7 days</span>
+            </div>
+            <div id="date-preset-pills" class="pill-grid">
+              <button type="button" data-preset="today" class="choice-pill">Today</button>
+              <button type="button" data-preset="yesterday" class="choice-pill">Yesterday</button>
+              <button type="button" data-preset="last-7-days" class="choice-pill active">Last 7 days</button>
+              <button type="button" data-preset="this-week" class="choice-pill">This week</button>
+              <button type="button" data-preset="last-week" class="choice-pill">Last week</button>
+              <button type="button" data-preset="this-month" class="choice-pill">This month</button>
+              <button type="button" data-preset="last-month" class="choice-pill">Last month</button>
+              <button type="button" data-preset="last-14-days" class="choice-pill">Last 14 days</button>
+              <button type="button" data-preset="last-30-days" class="choice-pill">Last 30 days</button>
+              <button type="button" data-preset="custom" class="choice-pill">Custom dates...</button>
+            </div>
+
+            <div id="custom-date-row" class="date-inputs-row hidden">
+              <div class="date-col">
+                <label for="report-from-date" class="sub-label">From (YYYY-MM-DD)</label>
+                <input type="date" id="report-from-date" class="input-standard">
+              </div>
+              <div class="date-col">
+                <label for="report-to-date" class="sub-label">To (YYYY-MM-DD)</label>
+                <input type="date" id="report-to-date" class="input-standard">
+              </div>
+            </div>
+          </div>
+
+          <!-- Author Filter -->
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label">Commit Author Filter</label>
+            </div>
+            <div id="author-mode-pills" class="pill-grid">
+              <button type="button" data-author="all" class="choice-pill active">All authors</button>
+              <button type="button" data-author="me" class="choice-pill">My commits only (--me)</button>
+              <button type="button" data-author="custom" class="choice-pill">Specific author...</button>
+            </div>
+            <div id="custom-author-row" class="sub-field hidden">
+              <input
+                type="text"
+                id="custom-author-input"
+                class="input-standard"
+                placeholder="Author name or email substring"
+              >
+            </div>
+          </div>
+
+          <!-- Output & Git Options -->
+          <div class="field-group options-grid">
+            <div class="output-dir-bar">
+              <div>
+                <span class="sub-label">Report Output Folder</span>
+                <code id="output-dir-label" class="field-hint">~/Documents/DeveloperToolkit-Reports</code>
+              </div>
+              <button type="button" id="btn-change-output-dir" class="btn btn-secondary btn-sm">
+                Change Output Folder...
+              </button>
+            </div>
+            <label class="checkbox-row">
+              <input type="checkbox" id="opt-fetch" checked>
+              <span>Fetch latest <code>origin</code> before querying logs</span>
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" id="opt-detailed">
+              <span>Include commit hash, date &amp; author (<code>--detailed</code>)</span>
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" id="opt-merges">
+              <span>Include merge commits (<code>--include-merges</code>)</span>
+            </label>
+          </div>
+
+          <div class="action-bar">
+            <button type="submit" id="btn-generate-report" class="btn btn-primary btn-large">
+              Generate &amp; Save Report (⌘↵)
+            </button>
+            <button type="button" id="btn-save-as-template" class="btn btn-secondary">
+              Save Setup as Template
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- TAB 2: SAVED TEMPLATES -->
+      <div id="panel-templates" class="workflow-panel hidden" role="tabpanel">
+        <div class="panel-header-bar">
+          <div class="heading-with-info">
+            <h2 class="section-heading">Report Templates</h2>
+            <button
+              type="button"
+              class="info-badge"
+              commandfor="popover-templates-info"
+              command="toggle-popover"
+              popovertarget="popover-templates-info"
+              aria-label="About Report Templates"
+              title="How Report Templates work"
+            >!</button>
+            <div id="popover-templates-info" popover class="info-popover">
+              <strong>Saved Report Templates</strong>
+              <p>Reusable presets stored in <code>~/.config/developer-toolkit/templates.conf</code> and shared between CLI (<code>dtk template</code>) and GUI.</p>
+            </div>
+          </div>
+          <button type="button" id="btn-new-template-From-current" class="btn btn-secondary">
+            + Save Current Builder as Template
+          </button>
+        </div>
+
+        <div id="template-editor-box" class="card-editor hidden">
+          <h3 id="tpl-editor-title" class="card-title">Save Report Template</h3>
+          <div class="form-row">
+            <label for="tpl-name-input" class="sub-label">Template Name</label>
+            <input
+              type="text"
+              id="tpl-name-input"
+              class="input-standard"
+              placeholder="e.g. core-weekly or standup"
+            >
+          </div>
+          <div class="form-row">
+            <label for="tpl-default-date" class="sub-label">Default Date Preset</label>
+            <select id="tpl-default-date" name="tpl-default-date" class="select-standard">
+              <option value="ask">Use current builder date selection (ask)</option>
+              <option value="today">Today</option>
+              <option value="yesterday">Yesterday</option>
+              <option value="last-7-days">Last 7 days</option>
+              <option value="this-week">This week</option>
+              <option value="last-week">Last week</option>
+              <option value="this-month">This month</option>
+              <option value="last-month">Last month</option>
+              <option value="last-14-days">Last 14 days</option>
+              <option value="last-30-days">Last 30 days</option>
+            </select>
+          </div>
+          <div class="editor-actions">
+            <button type="button" id="btn-confirm-save-template" class="btn btn-primary">Save Template</button>
+            <button type="button" id="btn-cancel-save-template" class="btn btn-ghost">Cancel</button>
+          </div>
+        </div>
+
+        <div id="templates-list" class="templates-list"></div>
+      </div>
+
+      <!-- TAB 1: SMART REBASE -->
+      <div id="panel-rebase" class="workflow-panel" role="tabpanel">
+        <div class="panel-header-bar">
+          <div class="heading-with-info">
+            <h2 class="section-heading">Git Smart Rebase</h2>
+            <button
+              type="button"
+              class="info-badge"
+              commandfor="popover-rebase-info"
+              command="toggle-popover"
+              popovertarget="popover-rebase-info"
+              aria-label="About Git Smart Rebase &amp; 5-Stage Safety Pipeline"
+              title="View 5-Stage Safety Pipeline details"
+            >!</button>
+            <div id="popover-rebase-info" popover class="info-popover">
+              <strong>Git Smart Rebase — 5-Stage Safety Pipeline</strong>
+              <p>Auto-stashes pending changes, updates target branch from remote, rebases cleanly, and restores your stash:</p>
+              <ol class="pipeline-steps">
+                <li><strong>Stage &amp; Auto-Stash:</strong> Preserves modified and untracked files before switching branches.</li>
+                <li><strong>Sync Target Branch:</strong> Checks out target branch and pulls latest updates from <code>origin</code>.</li>
+                <li><strong>Return to Working Branch:</strong> Switches back to your active feature branch.</li>
+                <li><strong>Rebase Onto Target:</strong> Rebases your commits cleanly on top of the updated target branch.</li>
+                <li><strong>Restore Stash:</strong> Pops your stashed work back into your working tree.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <form id="rebase-form" class="config-stack">
+          <div class="field-group">
+            <label for="rebase-repo-select" class="field-label">Local Repository</label>
+            <select id="rebase-repo-select" name="rebase-repo" class="select-standard"></select>
+            <div id="rebase-repo-telemetry" class="telemetry-callout"></div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-header">
+              <label for="rebase-target-select" class="field-label">Base Branch to Pull &amp; Rebase From</label>
+              <span class="field-hint"><svg class="star-icon star-icon-hint" viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Favorite Base Branches</span>
+            </div>
+            <div id="rebase-favorite-pills" class="pill-grid favorite-pills-row"></div>
+            <div class="rebase-input-row">
+              <select id="rebase-target-select" name="rebase-target" class="select-standard"></select>
+              <div class="custom-target-box">
+                <input
+                  type="text"
+                  id="rebase-custom-target"
+                  class="input-standard"
+                  placeholder="Custom branch (e.g. develop)..."
+                >
+                <button
+                  type="button"
+                  id="btn-star-target-branch"
+                  class="btn btn-secondary btn-icon"
+                  title="Toggle favorite branch"
+                  aria-label="Toggle favorite branch"
+                ><svg class="star-icon star-icon-btn" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button>
+              </div>
+            </div>
+            <div id="rebase-route-summary" class="rebase-route-banner"></div>
+          </div>
+
+          <div class="action-bar">
+            <button type="submit" id="btn-run-rebase" class="btn btn-primary btn-large">
+              Run Smart Rebase
+            </button>
+            <button type="button" id="btn-abort-rebase" class="btn btn-danger hidden">
+              Abort Rebase &amp; Restore Stash
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- RIGHT PANE: LIVE INSPECTOR (Report Output & Rebase Telemetry) -->
+    <aside id="live-inspector" class="pane live-inspector" aria-label="Live Output Inspector">
+      <div class="pane-header">
+        <div class="pane-title-group">
+          <h2 id="inspector-title" class="pane-title">Live Report Inspector</h2>
+          <span id="inspector-stats" class="pill">Ready</span>
+        </div>
+        <div class="inspector-actions">
+          <button type="button" id="btn-clear-output" class="btn btn-ghost btn-sm" title="Clear inspector output">
+            Clear
+          </button>
+          <button type="button" id="btn-copy-output" class="btn btn-secondary btn-sm" disabled>
+            Copy Output
+          </button>
+        </div>
+      </div>
+
+      <div id="saved-file-banner" class="saved-banner hidden">
+        <span class="saved-dot"></span>
+        <span id="saved-file-text" class="saved-path"></span>
+        <button type="button" id="btn-reveal-report" class="btn btn-secondary btn-sm">
+          Reveal in Folder
+        </button>
+      </div>
+
+      <div id="inspector-body" class="inspector-body">
+        <pre id="inspector-output" class="inspector-code">Select repositories on the left and click "Generate &amp; Save Report" to inspect commits and auto-save a Markdown report.</pre>
+      </div>
+    </aside>
+  </main>
+
+  <!-- MODAL DIALOG: Link or Scan Repositories -->
+  <dialog id="link-repo-dialog" closedby="any" aria-labelledby="dialog-title" class="modal-dialog">
+    <div class="modal-header">
+      <h2 id="dialog-title" class="section-heading">Link Git Repositories</h2>
+      <button type="button" id="btn-close-dialog" class="btn btn-ghost btn-sm" aria-label="Close modal">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="modal-section">
+        <h3 class="card-title">1. Auto-Scan Workspace Folder (0 MB storage)</h3>
+        <div class="split-input-row">
+          <input
+            type="text"
+            id="scan-dir-input"
+            class="input-standard"
+            placeholder="~/Documents or workspace path"
+          >
+          <button type="button" id="btn-browse-scan-dir" class="btn btn-secondary">Browse...</button>
+          <button type="button" id="btn-run-scan" class="btn btn-primary">Scan Folder</button>
+        </div>
+        <div id="scan-results-container" class="scan-results hidden">
+          <div id="scan-candidates-list" class="scan-list"></div>
+          <button type="button" id="btn-link-scanned" class="btn btn-primary btn-sm">
+            Link Checked Repositories
+          </button>
+        </div>
+      </div>
+
+      <hr class="modal-divider">
+
+      <div class="modal-section">
+        <h3 class="card-title">2. Link Single Local Path or Remote Git URL</h3>
+        <p class="section-sub">Remote URLs use lightweight metadata clones (<code>--filter=blob:none</code>).</p>
+        <div class="form-row">
+          <label for="add-target-input" class="sub-label">Local Folder Path or Remote URL</label>
+          <div class="split-input-row">
+            <input
+              type="text"
+              id="add-target-input"
+              class="input-standard"
+              placeholder="/path/to/repo or https://github.com/org/repo.git"
+            >
+            <button type="button" id="btn-browse-repo-dir" class="btn btn-secondary">Browse...</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="add-alias-input" class="sub-label">Custom Alias (Optional)</label>
+          <input
+            type="text"
+            id="add-alias-input"
+            class="input-standard"
+            placeholder="Leave blank to use repository folder/URL name"
+          >
+        </div>
+        <button type="button" id="btn-add-single-repo" class="btn btn-primary">
+          Link Repository
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="toast-region" class="toast-region" aria-live="polite"></div>
+
+  <script type="module" src="./app.mjs"></script>
+</body>
+</html>
