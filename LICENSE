@@ -1,6 +1,30 @@
 MIT License
 
-Copyright (c) 2026 Developer Toolkit Contributors
+Copyright (c) 2026 Khmer Vibe Coder (Developer Toolkit Contributors)
+
+==============================================================================
+DEVELOPER TOOLKIT (DTK) — OPEN SOURCE LICENSE & SCOPE
+==============================================================================
+
+This license applies to the entire Developer Toolkit project repository,
+including but not limited to:
+
+1. CLI Utilities & Unified Hub:
+   - Unified Hub (`dtk`, `git dtk`, `tools/git-toolkit/`)
+   - Report Builder CLI (`git report`, `tools/git-report/`)
+   - Smart Rebase CLI (`git smart-rebase`, `tools/git-smart-rebase/`)
+   - Template Engine CLI (`git template`, `tools/git-template/`)
+   - Installer and system configuration scripts (`install.sh`, `install.ps1`, `uninstall.sh`)
+
+2. Desktop Workbench:
+   - Standalone cross-platform Electron desktop application (`dtk gui`, `tools/git-gui/`)
+
+3. IDE Extensions:
+   - Antigravity IDE and Visual Studio Code extension package (`dtk-workbench`)
+
+==============================================================================
+TERMS AND CONDITIONS
+==============================================================================
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

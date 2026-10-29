@@ -104,3 +104,16 @@ To remove all registered aliases and symlinks across your system:
   ```bash
   git config --global --unset alias.smart-rebase
   ```
+
+---
+
+## 📄 License
+
+Developer Toolkit is open-source software licensed under the **[MIT License](LICENSE)**.
+
+**Copyright (c) 2026 Khmer Vibe Coder**
+
+This license covers all Developer Toolkit components:
+- **CLI Suite**: `git-toolkit` (`dtk`), `git-report`, `git-smart-rebase`, `git-template`
+- **Desktop Workbench**: Standalone cross-platform Electron app (`dtk gui` / `dtk app`)
+- **IDE Extension**: Antigravity IDE and VS Code extension (`dtk.openWorkbench`)
